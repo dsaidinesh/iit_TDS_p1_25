@@ -1,26 +1,31 @@
 # app.py
+# Main FastAPI application file that handles API endpoints and function routing
+# This file serves as the central hub for all task executions and API interactions
+
+# Dependencies required for the application
 # /// script
 # dependencies = [
-#   "requests",
-#   "fastapi",
-#   "uvicorn",
-#   "python-dateutil",
-#   "pandas",
-#   "db-sqlite3",
-#   "scipy",
-#   "pybase64",
-#   "python-dotenv",
-#   "httpx",
-#   "markdown",
-#   "duckdb"
+#   "requests",      # For making HTTP requests
+#   "fastapi",       # Web framework for building APIs
+#   "uvicorn",       # ASGI server implementation
+#   "python-dateutil", # For date parsing and manipulation
+#   "pandas",        # Data manipulation library
+#   "db-sqlite3",    # SQLite database interface
+#   "scipy",         # Scientific computing library
+#   "pybase64",      # Base64 encoding/decoding
+#   "python-dotenv", # Environment variable management
+#   "httpx",         # HTTP client with async support
+#   "markdown",      # Markdown to HTML conversion
+#   "duckdb"         # SQL database management
 # ]
 # ///
 
+# Import necessary libraries and modules
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from tasksA import *
-from tasksB import *
+from tasksA import *  # Import all functions from tasksA
+from tasksB import *  # Import all functions from tasksB
 import requests
 from dotenv import load_dotenv
 import os
@@ -28,8 +33,10 @@ import re
 import httpx
 import json
 
+# Initialize FastAPI application
 app = FastAPI()
 
+# Configure CORS middleware to allow cross-origin requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -38,75 +45,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-app = FastAPI()
+# Load environment variables
 load_dotenv()
 
-# @app.get('/ask')
-# def ask(prompt: str):
-#     """ Prompt Gemini to generate a response based on the given prompt. """
-#     gemini_api_key = os.getenv('gemini_api_key')
-#     if not gemini_api_key:
-#         return JSONResponse(content={"error": "GEMINI_API_KEY not set"}, status_code=500)
-
-#     # Read the contents of tasks.py
-#     with open('tasks.py', 'r') as file:
-#         tasks_content = file.read()
-
-#     # Prepare the request data
-#     data = {
-#         "contents": [{
-#             "parts": [
-#                 {"text": f"Find the task function from here for the below prompt:\n{tasks_content}\n\nPrompt: {prompt}\n\n respond with the function_name and function_parameters with parameters in json format"},
-#             ]
-#         }]
-#     }
-
-#     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_api_key}"
-#     headers = {
-#         "Content-Type": "application/json"
-#     }
-
-#     response = requests.post(url, json=data, headers=headers)
-
-#     if response.status_code == 200:
-#         text_reponse = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-#         match = re.search(r'```json\n(.*?)\n```', text_reponse, re.DOTALL)
-#         text_reponse = match.group(1).strip() if match else text_reponse
-#         return json.loads(text_reponse)
-#         # return JSONResponse(content=response.json(), status_code=200)
-#     else:
-#         return JSONResponse(content={"error": "Failed to get response", "details": response.text}, status_code=response.status_code)
-
+# API endpoint for natural language task processing
 @app.get("/ask")
 def ask(prompt: str):
     result = get_completions(prompt)
     return result
 
-openai_api_chat  = "http://aiproxy.sanand.workers.dev/openai/v1/chat/completions" # for testing
+# Configuration for OpenAI API proxy
+openai_api_chat = "http://aiproxy.sanand.workers.dev/openai/v1/chat/completions"
 openai_api_key = os.getenv("AIPROXY_TOKEN")
 
+# HTTP headers for API requests
 headers = {
     "Authorization": f"Bearer {openai_api_key}",
     "Content-Type": "application/json",
 }
 
+# Function definitions for LLM task routing
 function_definitions_llm = [
     {
-        "name": "A1",
+        "name": "generate_data",
         "description": "Run a Python script from a given URL, passing an email as the argument.",
         "parameters": {
             "type": "object",
             "properties": {
-                # "filename": {"type": "string", "pattern": r"https?://.*\.py"},
-                # "targetfile": {"type": "string", "pattern": r".*/(.*\.py)"},
                 "email": {"type": "string", "pattern": r"[\w\.-]+@[\w\.-]+\.\w+"}
             },
             "required": ["filename", "targetfile", "email"]
         }
     },
     {
-        "name": "A2",
+        "name": "format_markdown",
         "description": "Format a markdown file using a specified version of Prettier.",
         "parameters": {
             "type": "object",
@@ -118,7 +90,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A3",
+        "name": "count_weekday_dates",
         "description": "Count the number of occurrences of a specific weekday in a date file.",
         "parameters": {
             "type": "object",
@@ -131,7 +103,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A4",
+        "name": "sort_contacts",
         "description": "Sort a JSON contacts file and save the sorted version to a target file.",
         "parameters": {
             "type": "object",
@@ -149,7 +121,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A5",
+        "name": "get_recent_logs",
         "description": "Retrieve the most recent log files from a directory and save their content to an output file.",
         "parameters": {
             "type": "object",
@@ -174,7 +146,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A6",
+        "name": "create_docs_index",
         "description": "Generate an index of documents from a directory and save it as a JSON file.",
         "parameters": {
             "type": "object",
@@ -194,7 +166,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A7",
+        "name": "extract_email_sender",
         "description": "Extract the sender's email address from a text file and save it to an output file.",
         "parameters": {
             "type": "object",
@@ -214,7 +186,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A8",
+        "name": "process_credit_card",
         "description": "Generate an image representation of credit card details from a text file.",
         "parameters": {
             "type": "object",
@@ -234,7 +206,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A9",
+        "name": "find_similar_comments",
         "description": "Find similar comments from a text file and save them to an output file.",
         "parameters": {
             "type": "object",
@@ -254,8 +226,8 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "A10",
-        "description": "Identify high-value (gold) ticket sales from a database and save them to a text file.",
+        "name": "calculate_ticket_sales",
+        "description": "Calculate total ticket sales from a database and save the result to a file.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -271,29 +243,28 @@ function_definitions_llm = [
                 },
                 "query": {
                     "type": "string",
-                    "pattern": "SELECT SUM(units * price) FROM tickets WHERE type = 'Gold'"
+                    "default": "SELECT SUM(units * price) FROM tickets WHERE type = 'Gold'"
                 }
             },
             "required": ["filename", "output_filename", "query"]
         }
     },
     {
-        "name": "B12",
+        "name": "validate_data_path",
         "description": "Check if filepath starts with /data",
         "parameters": {
             "type": "object",
             "properties": {
                 "filepath": {
                     "type": "string",
-                    "pattern": r"^/data/.*",
-                    # "description": "Filepath must start with /data to ensure secure access."
+                    "pattern": r"^/data/.*"
                 }
             },
             "required": ["filepath"]
         }
     },
     {
-        "name": "B3",
+        "name": "download_url_content",
         "description": "Download content from a URL and save it to the specified path.",
         "parameters": {
             "type": "object",
@@ -313,7 +284,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "B5",
+        "name": "execute_sql_query",
         "description": "Execute a SQL query on a specified database file and save the result to an output file.",
         "parameters": {
             "type": "object",
@@ -337,7 +308,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "B6",
+        "name": "scrape_web_content",
         "description": "Fetch content from a URL and save it to the specified output file.",
         "parameters": {
             "type": "object",
@@ -357,7 +328,7 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "B7",
+        "name": "process_image",
         "description": "Process an image by optionally resizing it and saving the result to an output path.",
         "parameters": {
             "type": "object",
@@ -387,8 +358,8 @@ function_definitions_llm = [
         }
     },
     {
-        "name": "B9",
-        "description": "Convert a Markdown file to another format and save the result to the specified output path.",
+        "name": "convert_markdown_to_html",
+        "description": "Convert a Markdown file to HTML and save the result to the specified output path.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -406,89 +377,101 @@ function_definitions_llm = [
             "required": ["md_path", "output_path"]
         }
     }
-
 ]
 
 def get_completions(prompt: str):
+    """
+    Get function call completions from LLM based on user prompt
+    Args:
+        prompt (str): User's natural language prompt
+    Returns:
+        dict: Selected function and its parameters
+    """
     with httpx.Client(timeout=20) as client:
         response = client.post(
             f"{openai_api_chat}",
             headers=headers,
-            json=
-                {
-                    "model": "gpt-4o-mini",
-                    "messages": [
-                                    {"role": "system", "content": "You are a function classifier that extracts structured parameters from queries."},
-                                    {"role": "user", "content": prompt}
-                                ],
-                    "tools": [
-                                {
-                                    "type": "function",
-                                    "function": function
-                                } for function in function_definitions_llm
-                            ],
-                    "tool_choice": "auto"
-                },
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "You are a function classifier that extracts structured parameters from queries."},
+                    {"role": "user", "content": prompt}
+                ],
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": function
+                    } for function in function_definitions_llm
+                ],
+                "tool_choice": "auto"
+            },
         )
-    # return response.json()
-    print(response.json()["choices"][0]["message"]["tool_calls"][0]["function"])
     return response.json()["choices"][0]["message"]["tool_calls"][0]["function"]
 
-
-# Placeholder for task execution
+# API endpoint for executing tasks
 @app.post("/run")
 async def run_task(task: str):
+    """
+    Execute a specific task based on the provided description
+    Args:
+        task (str): Task description in natural language
+    Returns:
+        dict: Execution status and message
+    """
     try:
-        # Placeholder logic for executing tasks
-        # Replace with actual logic to parse task and execute steps
-        # Example: Execute task and return success or error based on result
-        # llm_response = function_calling(tast), function_name = A1
         response = get_completions(task)
-        print(response)
         task_code = response['name']
         arguments = response['arguments']
 
-        if "A1"== task_code:
-            A1(**json.loads(arguments))
-        if "A2"== task_code:
-            A2(**json.loads(arguments))
-        if "A3"== task_code:
-            A3(**json.loads(arguments))
-        if "A4"== task_code:
-            A4(**json.loads(arguments))
-        if "A5"== task_code:
-            A5(**json.loads(arguments))
-        if "A6"== task_code:
-            A6(**json.loads(arguments))
-        if "A7"== task_code:
-            A7(**json.loads(arguments))
-        if "A8"== task_code:
-            A8(**json.loads(arguments))
-        if "A9"== task_code:
-            A9(**json.loads(arguments))
-        if "A10"== task_code:
-            A10(**json.loads(arguments))
+        # Route the task to appropriate function based on task_code
+        # TasksA functions
+        if "generate_data"== task_code:
+            generate_data(**json.loads(arguments))
+        if "format_markdown"== task_code:
+            format_markdown(**json.loads(arguments))
+        if "count_weekday_dates"== task_code:
+            count_weekday_dates(**json.loads(arguments))
+        if "sort_contacts"== task_code:
+            sort_contacts(**json.loads(arguments))
+        if "get_recent_logs"== task_code:
+            get_recent_logs(**json.loads(arguments))
+        if "create_docs_index"== task_code:
+            create_docs_index(**json.loads(arguments))
+        if "extract_email_sender"== task_code:
+            extract_email_sender(**json.loads(arguments))
+        if "process_credit_card"== task_code:
+            process_credit_card(**json.loads(arguments))
+        if "find_similar_comments"== task_code:
+            find_similar_comments(**json.loads(arguments))
+        if "calculate_ticket_sales"== task_code:
+            calculate_ticket_sales(**json.loads(arguments))
 
-
-        if "B12"== task_code:
-            B12(**json.loads(arguments))
-        if "B3" == task_code:
-            B3(**json.loads(arguments))
-        if "B5" == task_code:
-            B5(**json.loads(arguments))
-        if "B6" == task_code:
-            B6(**json.loads(arguments))
-        if "B7" == task_code:
-            B7(**json.loads(arguments))
-        if "B9" == task_code:
-            B9(**json.loads(arguments))
+        if "validate_data_path"== task_code:
+            validate_data_path(**json.loads(arguments))
+        if "download_url_content" == task_code:
+            download_url_content(**json.loads(arguments))
+        if "execute_sql_query" == task_code:
+            execute_sql_query(**json.loads(arguments))
+        if "scrape_web_content" == task_code:
+            scrape_web_content(**json.loads(arguments))
+        if "process_image" == task_code:
+            process_image(**json.loads(arguments))
+        if "convert_markdown_to_html" == task_code:
+            convert_markdown_to_html(**json.loads(arguments))
         return {"message": f"{task_code} Task '{task}' executed successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Placeholder for file reading
+# API endpoint for reading file contents
 @app.get("/read", response_class=PlainTextResponse)
 async def read_file(path: str = Query(..., description="File path to read")):
+    """
+    Read and return the contents of a file
+    Args:
+        path (str): Path to the file to be read
+    Returns:
+        str: Contents of the file
+    """
     try:
         with open(path, "r") as file:
             return file.read()
@@ -497,6 +480,7 @@ async def read_file(path: str = Query(..., description="File path to read")):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Main entry point
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

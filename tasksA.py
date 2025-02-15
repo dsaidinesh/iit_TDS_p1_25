@@ -1,3 +1,7 @@
+# tasksA.py
+# Collection of data processing and manipulation functions for various file formats and operations
+
+# Import required libraries
 import sqlite3
 import subprocess
 from dateutil.parser import parse
@@ -9,12 +13,20 @@ import requests
 from scipy.spatial.distance import cosine
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
+# Get API token from environment variables
 AIPROXY_TOKEN = os.getenv('AIPROXY_TOKEN')
 
-
-def A1(email="22f1000913@ds.study.iitm.ac.in"):
+def generate_data(email="22f1000913@ds.study.iitm.ac.in"):
+    """
+    Generate data by running a Python script from a URL with an email parameter
+    Args:
+        email (str): Email address to be used for data generation
+    Returns:
+        str: Output from the script execution
+    """
     try:
         process = subprocess.Popen(
             ["uv", "run", "https://raw.githubusercontent.com/sanand0/tools-in-data-science-public/tds-2025-01/project-1/datagen.py", email],
@@ -26,8 +38,14 @@ def A1(email="22f1000913@ds.study.iitm.ac.in"):
         return stdout
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Error: {e.stderr}")
-# A1()
-def A2(prettier_version="prettier@3.4.2", filename="/data/format.md"):
+
+def format_markdown(prettier_version="prettier@3.4.2", filename="/data/format.md"):
+    """
+    Format a markdown file using Prettier
+    Args:
+        prettier_version (str): Version of Prettier to use
+        filename (str): Path to the markdown file
+    """
     command = [r"C:\Program Files\nodejs\npx.cmd", prettier_version, "--write", filename]
     try:
         subprocess.run(command, check=True)
@@ -35,73 +53,91 @@ def A2(prettier_version="prettier@3.4.2", filename="/data/format.md"):
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
-def A3(filename='/data/dates.txt', targetfile='/data/dates-wednesdays.txt', weekday=2):
+def count_weekday_dates(filename='/data/dates.txt', targetfile='/data/dates-wednesdays.txt', weekday=2):
+    """
+    Count occurrences of a specific weekday in a file containing dates
+    Args:
+        filename (str): Input file containing dates
+        targetfile (str): Output file to write the count
+        weekday (int): Day of week to count (1=Monday, 7=Sunday)
+    """
     input_file = filename
     output_file = targetfile
-    weekday = weekday
     weekday_count = 0
 
     with open(input_file, 'r') as file:
         weekday_count = sum(1 for date in file if parse(date).weekday() == int(weekday)-1)
 
-
     with open(output_file, 'w') as file:
         file.write(str(weekday_count))
 
-def A4(filename="/data/contacts.json", targetfile="/data/contacts-sorted.json"):
-    # Load the contacts from the JSON file
+def sort_contacts(filename="/data/contacts.json", targetfile="/data/contacts-sorted.json"):
+    """
+    Sort contacts in a JSON file by last name and first name
+    Args:
+        filename (str): Input JSON file containing contacts
+        targetfile (str): Output file for sorted contacts
+    """
     with open(filename, 'r') as file:
         contacts = json.load(file)
 
-    # Sort the contacts by last_name and then by first_name
     sorted_contacts = sorted(contacts, key=lambda x: (x['last_name'], x['first_name']))
 
-    # Write the sorted contacts to the new JSON file
     with open(targetfile, 'w') as file:
         json.dump(sorted_contacts, file, indent=4)
 
-def A5(log_dir_path='/data/logs', output_file_path='/data/logs-recent.txt', num_files=10):
+def get_recent_logs(log_dir_path='/data/logs', output_file_path='/data/logs-recent.txt', num_files=10):
+    """
+    Get first lines from most recent log files
+    Args:
+        log_dir_path (str): Directory containing log files
+        output_file_path (str): Output file to write the first lines
+        num_files (int): Number of most recent files to process
+    """
     log_dir = Path(log_dir_path)
     output_file = Path(output_file_path)
 
-    # Get list of .log files sorted by modification time (most recent first)
     log_files = sorted(log_dir.glob('*.log'), key=os.path.getmtime, reverse=True)[:num_files]
 
-    # Read first line of each file and write to the output file
     with output_file.open('w') as f_out:
         for log_file in log_files:
             with log_file.open('r') as f_in:
                 first_line = f_in.readline().strip()
                 f_out.write(f"{first_line}\n")
 
-def A6(doc_dir_path='/data/docs', output_file_path='/data/docs/index.json'):
+def create_docs_index(doc_dir_path='/data/docs', output_file_path='/data/docs/index.json'):
+    """
+    Create an index of markdown documents with their titles
+    Args:
+        doc_dir_path (str): Directory containing markdown files
+        output_file_path (str): Output JSON file for the index
+    """
     docs_dir = doc_dir_path
     output_file = output_file_path
     index_data = {}
 
-    # Walk through all files in the docs directory
     for root, _, files in os.walk(docs_dir):
         for file in files:
             if file.endswith('.md'):
-                # print(file)
                 file_path = os.path.join(root, file)
-                # Read the file and find the first occurrence of an H1
                 with open(file_path, 'r', encoding='utf-8') as f:
                     for line in f:
                         if line.startswith('# '):
-                            # Extract the title text after '# '
                             title = line[2:].strip()
-                            # Get the relative path without the prefix
                             relative_path = os.path.relpath(file_path, docs_dir).replace('\\', '/')
                             index_data[relative_path] = title
-                            break  # Stop after the first H1
-    # Write the index data to index.json
-    # print(index_data)
+                            break
+
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(index_data, f, indent=4)
 
-def A7(filename='/data/email.txt', output_file='/data/email-sender.txt'):
-    # Read the content of the email
+def extract_email_sender(filename='/data/email.txt', output_file='/data/email-sender.txt'):
+    """
+    Extract sender's email address from an email file
+    Args:
+        filename (str): Input email file
+        output_file (str): Output file to write the sender's email
+    """
     with open(filename, 'r') as file:
         email_content = file.readlines()
 
@@ -111,52 +147,29 @@ def A7(filename='/data/email.txt', output_file='/data/email-sender.txt'):
             sender_email = (line.strip().split(" ")[-1]).replace("<", "").replace(">", "")
             break
 
-    # Get the extracted email address
-
-    # Write the email address to the output file
     with open(output_file, 'w') as file:
         file.write(sender_email)
 
 import base64
 def png_to_base64(image_path):
+    """
+    Convert PNG image to base64 string
+    Args:
+        image_path (str): Path to the PNG image
+    Returns:
+        str: Base64 encoded string of the image
+    """
     with open(image_path, "rb") as image_file:
         base64_string = base64.b64encode(image_file.read()).decode('utf-8')
     return base64_string
-# def A8():
-#     input_image = "data/credit_card.png"
-#     output_file = "data/credit-card.txt"
 
-#     # Step 1: Extract text using OCR
-#     try:
-#         image = Image.open(input_image)
-#         extracted_text = pytesseract.image_to_string(image)
-#         print(f"Extracted text:\n{extracted_text}")
-#     except Exception as e:
-#         print(f"❌ Error reading or processing {input_image}: {e}")
-#         return
-
-#     # Step 2: Pass the extracted text to the LLM to validate and extract card number
-#     prompt = f"""Extract the credit card number from the following text. Respond with only the card number, without spaces:
-
-#     {extracted_text}
-#     """
-#     try:
-#         card_number = ask_llm(prompt).strip()
-#         print(f"Card number extracted by LLM: {card_number}")
-#     except Exception as e:
-#         print(f"❌ Error processing with LLM: {e}")
-#         return
-
-#     # Step 3: Save the extracted card number to a text file
-#     try:
-#         with open(output_file, "w", encoding="utf-8") as file:
-#             file.write(card_number + "\n")
-#         print(f"✅ Credit card number saved to: {output_file}")
-#     except Exception as e:
-#         print(f"❌ Error writing {output_file}: {e}")
-
-def A8(filename='/data/credit_card.txt', image_path='/data/credit_card.png'):
-    # Construct the request body for the AIProxy call
+def process_credit_card(filename='/data/credit_card.txt', image_path='/data/credit_card.png'):
+    """
+    Extract credit card number from an image using AI
+    Args:
+        filename (str): Output file to write the card number
+        image_path (str): Input image containing credit card details
+    """
     body = {
         "model": "gpt-4o-mini",
         "messages": [
@@ -183,24 +196,22 @@ def A8(filename='/data/credit_card.txt', image_path='/data/credit_card.png'):
         "Authorization": f"Bearer {AIPROXY_TOKEN}"
     }
 
-    # Make the request to the AIProxy service
     response = requests.post("http://aiproxy.sanand.workers.dev/openai/v1/chat/completions",
                              headers=headers, data=json.dumps(body))
-    # response.raise_for_status()
-
-    # Extract the credit card number from the response
     result = response.json()
-    # print(result); return None
     card_number = result['choices'][0]['message']['content'].replace(" ", "")
 
-    # Write the extracted card number to the output file
     with open(filename, 'w') as file:
         file.write(card_number)
-# A8()
-
-
 
 def get_embedding(text):
+    """
+    Get text embedding using OpenAI's API
+    Args:
+        text (str): Text to get embedding for
+    Returns:
+        list: Embedding vector
+    """
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {AIPROXY_TOKEN}"
@@ -213,15 +224,18 @@ def get_embedding(text):
     response.raise_for_status()
     return response.json()["data"][0]["embedding"]
 
-def A9(filename='/data/comments.txt', output_filename='/data/comments-similar.txt'):
-    # Read comments
+def find_similar_comments(filename='/data/comments.txt', output_filename='/data/comments-similar.txt'):
+    """
+    Find the most similar pair of comments using embeddings
+    Args:
+        filename (str): Input file containing comments
+        output_filename (str): Output file to write similar comments
+    """
     with open(filename, 'r') as f:
         comments = [line.strip() for line in f.readlines()]
 
-    # Get embeddings for all comments
     embeddings = [get_embedding(comment) for comment in comments]
 
-    # Find the most similar pair
     min_distance = float('inf')
     most_similar = (None, None)
 
@@ -232,26 +246,26 @@ def A9(filename='/data/comments.txt', output_filename='/data/comments-similar.tx
                 min_distance = distance
                 most_similar = (comments[i], comments[j])
 
-    # Write the most similar pair to file
     with open(output_filename, 'w') as f:
         f.write(most_similar[0] + '\n')
         f.write(most_similar[1] + '\n')
 
-def A10(filename='/data/ticket-sales.db', output_filename='/data/ticket-sales-gold.txt', query="SELECT SUM(units * price) FROM tickets WHERE type = 'Gold'"):
-    # Connect to the SQLite database
+def calculate_ticket_sales(filename='/data/ticket-sales.db', output_filename='/data/ticket-sales-gold.txt', query="SELECT SUM(units * price) FROM tickets WHERE type = 'Gold'"):
+    """
+    Calculate total ticket sales from a database
+    Args:
+        filename (str): SQLite database file
+        output_filename (str): Output file to write total sales
+        query (str): SQL query to calculate sales
+    """
     conn = sqlite3.connect(filename)
     cursor = conn.cursor()
 
-    # Calculate the total sales for the "Gold" ticket type
     cursor.execute(query)
     total_sales = cursor.fetchone()[0]
-
-    # If there are no sales, set total_sales to 0
     total_sales = total_sales if total_sales else 0
 
-    # Write the total sales to the file
     with open(output_filename, 'w') as file:
         file.write(str(total_sales))
 
-    # Close the database connection
     conn.close()

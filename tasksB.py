@@ -1,9 +1,18 @@
+# tasksB.py
+# Collection of utility functions for data security, web scraping, and file processing
 # Phase B: LLM-based Automation Agent for DataWorks Solutions
 
-# B1 & B2: Security Checks
+# Import required libraries
 import os
 
-def B12(filepath):
+def validate_data_path(filepath):
+    """
+    Validate that a file path starts with '/data' for security
+    Args:
+        filepath (str): Path to validate
+    Returns:
+        bool: True if path starts with '/data', False otherwise
+    """
     if filepath.startswith('/data'):
         # raise PermissionError("Access outside /data is not allowed.")
         # print("Access outside /data is not allowed.")
@@ -12,8 +21,14 @@ def B12(filepath):
         return False
 
 # B3: Fetch Data from an API
-def B3(url, save_path):
-    if not B12(save_path):
+def download_url_content(url, save_path):
+    """
+    Download content from a URL and save it to a file
+    Args:
+        url (str): URL to download content from
+        save_path (str): Path to save the downloaded content
+    """
+    if not validate_data_path(save_path):
         return None
     import requests
     response = requests.get(url)
@@ -27,8 +42,17 @@ def B3(url, save_path):
 #     subprocess.run(["git", "-C", "/data/repo", "commit", "-m", commit_message])
 
 # B5: Run SQL Query
-def B5(db_path, query, output_filename):
-    if not B12(db_path):
+def execute_sql_query(db_path, query, output_filename):
+    """
+    Execute a SQL query on a database and save results to a file
+    Args:
+        db_path (str): Path to the database file
+        query (str): SQL query to execute
+        output_filename (str): File to save query results
+    Returns:
+        list: Query results
+    """
+    if not validate_data_path(db_path):
         return None
     import sqlite3, duckdb
     conn = sqlite3.connect(db_path) if db_path.endswith('.db') else duckdb.connect(db_path)
@@ -41,18 +65,31 @@ def B5(db_path, query, output_filename):
     return result
 
 # B6: Web Scraping
-def B6(url, output_filename):
+def scrape_web_content(url, output_filename):
+    """
+    Scrape content from a webpage and save it to a file
+    Args:
+        url (str): URL to scrape content from
+        output_filename (str): File to save scraped content
+    """
     import requests
     result = requests.get(url).text
     with open(output_filename, 'w') as file:
         file.write(str(result))
 
 # B7: Image Processing
-def B7(image_path, output_path, resize=None):
+def process_image(image_path, output_path, resize=None):
+    """
+    Process an image with optional resizing
+    Args:
+        image_path (str): Path to input image
+        output_path (str): Path to save processed image
+        resize (tuple, optional): New dimensions (width, height)
+    """
     from PIL import Image
-    if not B12(image_path):
+    if not validate_data_path(image_path):
         return None
-    if not B12(output_path):
+    if not validate_data_path(output_path):
         return None
     img = Image.open(image_path)
     if resize:
@@ -68,11 +105,17 @@ def B7(image_path, output_path, resize=None):
 #         return openai.Audio.transcribe("whisper-1", audio_file)
 
 # B9: Markdown to HTML Conversion
-def B9(md_path, output_path):
+def convert_markdown_to_html(md_path, output_path):
+    """
+    Convert a Markdown file to HTML format
+    Args:
+        md_path (str): Path to input Markdown file
+        output_path (str): Path to save HTML output
+    """
     import markdown
-    if not B12(md_path):
+    if not validate_data_path(md_path):
         return None
-    if not B12(output_path):
+    if not validate_data_path(output_path):
         return None
     with open(md_path, 'r') as file:
         html = markdown.markdown(file.read())
