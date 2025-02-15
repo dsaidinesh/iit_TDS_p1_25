@@ -1,0 +1,12 @@
+# Python specific
+__pycache__/
+
+# Virtual Environment
+
+.env
+
+
+# Specific files to ignore
+datagen.py
+evaluate.py
+
