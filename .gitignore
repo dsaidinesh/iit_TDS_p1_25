@@ -2,6 +2,7 @@
 __pycache__/
 
 # Virtual Environment
+data/
 
 .env
 
